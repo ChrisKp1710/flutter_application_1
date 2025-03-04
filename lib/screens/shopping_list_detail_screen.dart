@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shopping_list.dart';
@@ -79,9 +80,11 @@ class _ShoppingListDetailScreenState
             ElevatedButton(
               onPressed: () async {
                 if (controller.text.isNotEmpty) {
+                  String itemName = controller.text.trim();
+
                   // Controlla se l’elemento esiste già
                   bool alreadyExists = items.any(
-                    (item) => item.name == controller.text,
+                    (item) => item.name == itemName,
                   );
                   if (alreadyExists) {
                     Navigator.pop(context);
@@ -90,7 +93,7 @@ class _ShoppingListDetailScreenState
 
                   final newItem = ShoppingItem(
                     id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: controller.text,
+                    name: itemName,
                     checked: false,
                   );
 
@@ -98,25 +101,37 @@ class _ShoppingListDetailScreenState
                     items.add(newItem);
                   });
 
-                  // Salva in Hive subito per la modalità offline
+                  // 🔥 Salva SUBITO in Hive per la modalità offline
                   widget.list.items.add(newItem);
                   _hiveService.saveShoppingList(widget.list);
 
+                  // 🔥 CHIUDI LA MODALE IMMEDIATAMENTE
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+
+                  // 🔄 Tenta di salvare su Firestore in background
                   try {
-                    // Tenta di salvare su Firebase (se c’è connessione)
                     await _firestoreService.addItemToList(
                       widget.list.id,
                       newItem,
                     );
                   } catch (e) {
-                    print(
-                      "⚠️ Errore nel salvataggio su Firebase, rimane solo in Hive",
-                    );
-                  }
+                    if (kDebugMode) {
+                      print("⚠️ Errore nel salvataggio su Firebase: $e");
+                    }
 
-                  // 🔥 Chiudiamo la modale SOLO dopo aver aggiunto l'elemento
-                  if (mounted) {
-                    Navigator.pop(context);
+                    // 🔥 Mostra un messaggio di avviso solo se il salvataggio fallisce
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Elemento salvato solo offline. Si sincronizzerà appena disponibile.",
+                          ),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
                   }
                 }
               },

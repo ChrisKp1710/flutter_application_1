@@ -4,7 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_application_1/screens/auth_screen.dart';
+import 'package:flutter_application_1/screens/shopping_list_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Aggiunto per Riverpod
+import 'package:firebase_auth/firebase_auth.dart';
 import 'hive_boxes.dart';
 import 'services/hive_service.dart';
 
@@ -21,12 +23,7 @@ void main() async {
   registerHiveAdapters();
   await HiveService().initHive();
 
-  runApp(
-    ProviderScope(
-      // 🔥 Avvolge l'app con ProviderScope per abilitare Riverpod
-      child: const MyApp(),
-    ),
-  );
+  runApp(ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -36,9 +33,29 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AuthScreen(),
-      // Aggiungi il NavigatorObserver per tracciare i passaggi di schermata
+      home: AuthWrapper(), // 🔥 Controlla se l'utente è già loggato
       navigatorObservers: [FirebaseAnalyticsObserver(analytics: analytics)],
+    );
+  }
+}
+
+// 🔥 Questa classe decide se mostrare la schermata di login o la lista della spesa
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasData) {
+          return const ShoppingListScreen(); // 🔥 Se l'utente è loggato, va alla lista
+        } else {
+          return const AuthScreen(); // 🔥 Se non è loggato, mostra la schermata di login
+        }
+      },
     );
   }
 }
