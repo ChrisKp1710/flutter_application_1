@@ -1,37 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ Importato SharedPreferences
 import '../models/shopping_list.dart';
 import '../providers/shopping_list_provider.dart';
-import '../providers/connection_provider.dart'; // 🔥 Aggiunto per lo stato connessione
+import '../providers/connection_provider.dart';
 import 'shopping_list_detail_screen.dart';
 import 'auth_screen.dart';
 
-class ShoppingListScreen extends ConsumerWidget {
+class ShoppingListScreen extends ConsumerStatefulWidget {
   const ShoppingListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  _ShoppingListScreenState createState() => _ShoppingListScreenState();
+}
+
+class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
+  String? profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage(); // ✅ Carica immagine salvata all'avvio
+  }
+
+  Future<void> _loadProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profileImage = prefs.getString('profileImage');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final shoppingLists = ref.watch(shoppingListProvider);
-    final user = FirebaseAuth.instance.currentUser; // Ottieni l'utente attuale
-    final bool isOnline = ref.watch(
-      connectionStatusProvider,
-    ); // 🔥 Controllo connessione
+    final user = FirebaseAuth.instance.currentUser;
+    final bool isOnline = ref.watch(connectionStatusProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Le mie Liste della Spesa"),
         actions: [
-          if (user != null) // Mostra l'immagine solo se l'utente è loggato
+          if (user != null)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Stack(
                 children: [
                   CircleAvatar(
                     backgroundImage:
-                        user.photoURL != null
-                            ? NetworkImage(user.photoURL!)
-                            : null,
+                        profileImage != null && profileImage!.isNotEmpty
+                            ? NetworkImage(profileImage!)
+                            : const AssetImage("assets/default_profile.png")
+                                as ImageProvider,
                     backgroundColor: Colors.grey[300],
                   ),
                   Positioned(
@@ -42,10 +62,7 @@ class ShoppingListScreen extends ConsumerWidget {
                       height: 12,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            isOnline
-                                ? Colors.green
-                                : Colors.orange, // ✅ Stato connessione
+                        color: isOnline ? Colors.green : Colors.orange,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                     ),
@@ -57,10 +74,15 @@ class ShoppingListScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const AuthScreen()),
-              );
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('profileImage');
+
+              if (context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                );
+              }
             },
           ),
         ],
@@ -95,6 +117,7 @@ class ShoppingListScreen extends ConsumerWidget {
     );
   }
 
+  /// 🔹 Funzione per aggiungere una nuova lista della spesa
   void _addShoppingList(BuildContext context, WidgetRef ref) {
     TextEditingController controller = TextEditingController();
 
@@ -124,7 +147,10 @@ class ShoppingListScreen extends ConsumerWidget {
                   ref
                       .read(shoppingListProvider.notifier)
                       .addShoppingList(newList);
-                  Navigator.pop(context);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text("Crea"),

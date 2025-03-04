@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_1/screens/email_signin_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter_application_1/screens/shopping_list_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // ✅ Importato SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart'; // ✅ Importato SharedPreferences
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -75,17 +75,27 @@ class AuthScreen extends StatelessWidget {
 
       if (user != null) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-          'profileImage',
-          user.photoURL ?? "",
-        ); // ✅ Salva immagine profilo
+        await prefs.setString('profileImage', user.photoURL ?? "");
 
-        _navigateToShoppingList(context);
+        if (context.mounted) {
+          // ✅ Controllo prima di usare context
+          _navigateToShoppingList(context);
+        }
       }
     } catch (e) {
       if (kDebugMode) {
         print("❌ Errore accesso Google: $e");
       }
+    }
+  }
+
+  /// 🔹 Login con Email e Password
+  Future<void> _signInWithEmail(BuildContext context) async {
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const EmailSignInScreen()),
+      );
     }
   }
 
@@ -104,7 +114,9 @@ class AuthScreen extends StatelessWidget {
       ).credential(idToken: credential.identityToken);
       await FirebaseAuth.instance.signInWithCredential(oauthCredential);
 
-      _navigateToShoppingList(context);
+      if (context.mounted) {
+        _navigateToShoppingList(context);
+      }
     } catch (e) {
       if (kDebugMode) {
         print("❌ Errore accesso Apple: $e");
@@ -112,19 +124,13 @@ class AuthScreen extends StatelessWidget {
     }
   }
 
-  /// 🔹 Login con Email e Password
-  Future<void> _signInWithEmail(BuildContext context) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const EmailSignInScreen()),
-    );
-  }
-
   /// 🔹 Naviga alla schermata principale dopo il login
   void _navigateToShoppingList(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const ShoppingListScreen()),
-    );
+    if (context.mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ShoppingListScreen()),
+      );
+    }
   }
 }
