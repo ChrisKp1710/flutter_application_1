@@ -98,7 +98,7 @@ class _ShoppingListDetailScreenState
                     items.add(newItem);
                   });
 
-                  // Salva in Hive subito per modalità offline
+                  // Salva in Hive subito per la modalità offline
                   widget.list.items.add(newItem);
                   _hiveService.saveShoppingList(widget.list);
 
@@ -114,7 +114,10 @@ class _ShoppingListDetailScreenState
                     );
                   }
 
-                  Navigator.pop(context);
+                  // 🔥 Chiudiamo la modale SOLO dopo aver aggiunto l'elemento
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text("Aggiungi"),
