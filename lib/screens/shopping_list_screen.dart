@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/shopping_list.dart';
 import '../providers/shopping_list_provider.dart';
+import '../providers/connection_provider.dart'; // 🔥 Aggiunto per lo stato connessione
 import 'shopping_list_detail_screen.dart';
 import 'auth_screen.dart';
 
@@ -13,6 +14,9 @@ class ShoppingListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shoppingLists = ref.watch(shoppingListProvider);
     final user = FirebaseAuth.instance.currentUser; // Ottieni l'utente attuale
+    final bool isOnline = ref.watch(
+      connectionStatusProvider,
+    ); // 🔥 Controllo connessione
 
     return Scaffold(
       appBar: AppBar(
@@ -21,9 +25,32 @@ class ShoppingListScreen extends ConsumerWidget {
           if (user != null) // Mostra l'immagine solo se l'utente è loggato
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(user.photoURL ?? ""),
-                backgroundColor: Colors.grey[300],
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    backgroundImage:
+                        user.photoURL != null
+                            ? NetworkImage(user.photoURL!)
+                            : null,
+                    backgroundColor: Colors.grey[300],
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color:
+                            isOnline
+                                ? Colors.green
+                                : Colors.orange, // ✅ Stato connessione
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           IconButton(
