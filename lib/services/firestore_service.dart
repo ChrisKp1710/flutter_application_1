@@ -6,7 +6,7 @@ import '../models/shopping_item.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Crea una nuova lista della spesa in Firestore
+  // 🔥 Crea una nuova lista della spesa in Firestore
   Future<void> createShoppingList(ShoppingList list) async {
     try {
       await _db
@@ -20,7 +20,7 @@ class FirestoreService {
     }
   }
 
-  // Recupera tutte le liste della spesa in tempo reale
+  // 🔄 Recupera tutte le liste della spesa in tempo reale
   Stream<List<ShoppingList>> getShoppingLists() {
     return _db.collection("shopping_lists").snapshots().map((snapshot) {
       return snapshot.docs
@@ -29,7 +29,26 @@ class FirestoreService {
     });
   }
 
-  // Aggiunge un nuovo elemento a una lista della spesa
+  // 🔄 Recupera gli elementi della lista della spesa in tempo reale
+  Stream<List<ShoppingItem>> getShoppingListItems(String listId) {
+    return _db
+        .collection("shopping_lists")
+        .doc(listId)
+        .collection("items")
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return ShoppingItem(
+              id: doc.id,
+              name: data['name'] ?? '',
+              checked: data['checked'] ?? false,
+            );
+          }).toList();
+        });
+  }
+
+  // ➕ Aggiunge un nuovo elemento a una lista della spesa
   Future<void> addItemToList(String listId, ShoppingItem item) async {
     try {
       await _db
@@ -45,7 +64,7 @@ class FirestoreService {
     }
   }
 
-  // Aggiorna lo stato di un elemento (checkbox selezionata/non selezionata)
+  // ✅ Aggiorna lo stato della checkbox (se l’elemento è stato preso o no)
   Future<void> updateItemStatus(
     String listId,
     String itemId,
@@ -65,7 +84,7 @@ class FirestoreService {
     }
   }
 
-  // Elimina una lista della spesa
+  // ❌ Elimina una lista della spesa
   Future<void> deleteShoppingList(String listId) async {
     try {
       await _db.collection("shopping_lists").doc(listId).delete();
