@@ -1,3 +1,4 @@
+import 'dart:io'; // ✅ Import necessario per controllare il sistema operativo
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -40,11 +41,14 @@ class AuthScreen extends StatelessWidget {
               onPressed: () => _signInWithGoogle(context),
             ),
             const SizedBox(height: 10),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.apple),
-              label: const Text("Accedi con Apple"),
-              onPressed: () => _signInWithApple(context),
-            ),
+
+            // 🔥 Mostra il pulsante Apple SOLO su iOS/macOS
+            if (Platform.isIOS || Platform.isMacOS)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.apple),
+                label: const Text("Accedi con Apple"),
+                onPressed: () => _signInWithApple(context),
+              ),
           ],
         ),
       ),
