@@ -5,13 +5,14 @@ import 'package:flutter_application_1/screens/email_signin_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter_application_1/screens/shopping_list_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ Importato SharedPreferences
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 Se l'utente è già loggato, reindirizzalo direttamente alla ShoppingListScreen
+    // 🔥 Se l'utente è già loggato, lo reindirizziamo direttamente
     if (FirebaseAuth.instance.currentUser != null) {
       Future.microtask(() {
         Navigator.pushReplacement(
@@ -50,6 +51,7 @@ class AuthScreen extends StatelessWidget {
     );
   }
 
+  /// 🔹 Login con Google e salvataggio dell'immagine profilo
   Future<void> _signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -62,8 +64,20 @@ class AuthScreen extends StatelessWidget {
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      _navigateToShoppingList(context);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+      final user = userCredential.user;
+
+      if (user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'profileImage',
+          user.photoURL ?? "",
+        ); // ✅ Salva immagine profilo
+
+        _navigateToShoppingList(context);
+      }
     } catch (e) {
       if (kDebugMode) {
         print("❌ Errore accesso Google: $e");
@@ -71,6 +85,7 @@ class AuthScreen extends StatelessWidget {
     }
   }
 
+  /// 🔹 Login con Apple
   Future<void> _signInWithApple(BuildContext context) async {
     try {
       final credential = await SignInWithApple.getAppleIDCredential(
@@ -84,6 +99,7 @@ class AuthScreen extends StatelessWidget {
         "apple.com",
       ).credential(idToken: credential.identityToken);
       await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+
       _navigateToShoppingList(context);
     } catch (e) {
       if (kDebugMode) {
@@ -92,6 +108,7 @@ class AuthScreen extends StatelessWidget {
     }
   }
 
+  /// 🔹 Login con Email e Password
   Future<void> _signInWithEmail(BuildContext context) async {
     Navigator.push(
       context,
@@ -99,6 +116,7 @@ class AuthScreen extends StatelessWidget {
     );
   }
 
+  /// 🔹 Naviga alla schermata principale dopo il login
   void _navigateToShoppingList(BuildContext context) {
     Navigator.pushReplacement(
       context,
