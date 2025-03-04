@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_application_1/email_signin_screen.dart';
+import 'package:flutter_application_1/screens/email_signin_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:flutter_application_1/shopping_list_screen.dart'; // Schermata della lista della spesa
+import 'package:flutter_application_1/screens/shopping_list_screen.dart'; // Schermata della lista della spesa
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
