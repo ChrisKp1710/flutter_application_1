@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shopping_list.dart';
@@ -28,12 +27,14 @@ class _ShoppingListDetailScreenState
   void initState() {
     super.initState();
     _loadItems();
-    _syncWithFirebase(); // 🔥 Aggiunto per sincronizzare Firebase con Hive
+    _syncWithFirebase();
   }
 
   // 🔄 Carica gli elementi dalla lista locale Hive
   void _loadItems() {
-    items = widget.list.items;
+    setState(() {
+      items = widget.list.items;
+    });
   }
 
   // 🔄 Sincronizza Firebase con Hive
@@ -41,6 +42,8 @@ class _ShoppingListDetailScreenState
     _firestoreService.getShoppingListItems(widget.list.id).listen((
       firebaseItems,
     ) {
+      if (!mounted) return; // Evita errori se lo schermo è chiuso
+
       setState(() {
         items = firebaseItems;
       });
@@ -116,10 +119,11 @@ class _ShoppingListDetailScreenState
                       widget.list.id,
                       newItem,
                     );
+                    debugPrint(
+                      "✅ Elemento sincronizzato con Firebase: ${newItem.name}",
+                    );
                   } catch (e) {
-                    if (kDebugMode) {
-                      print("⚠️ Errore nel salvataggio su Firebase: $e");
-                    }
+                    debugPrint("⚠️ Errore nel salvataggio su Firebase: $e");
 
                     // 🔥 Mostra un messaggio di avviso solo se il salvataggio fallisce
                     if (mounted) {
